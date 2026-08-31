@@ -1,0 +1,12 @@
+RENTAL AGREEMENT
+
+Landlord: Jane Doe
+Tenant: John Smith
+Property Address: 123 Main Street, Mumbai, India
+Rent: INR 25,000 per month, payable on or before the 5th of each month.
+Security Deposit: INR 50,000
+Lease Term: 11 months, starting from September 1, 2026.
+Notice Period: 30 days prior written notice by either party.
+Maintenance: Tenant is responsible for minor repairs and daily upkeep. Landlord is responsible for structural maintenance of walls and roof.
+Termination: If the Tenant fails to pay rent for two consecutive months, the Landlord may terminate this agreement immediately.
+Renewal: The lease can be renewed with a 10% rent increment upon mutual consent.

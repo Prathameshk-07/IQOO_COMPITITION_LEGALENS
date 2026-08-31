@@ -1,0 +1,22 @@
+EMPLOYMENT CONTRACT
+
+This Employment Agreement is entered into on September 1, 2026, by and between:
+Employer: Acme Global Corporation, located at 500 tech plaza, Silicon Valley, CA.
+Employee: Robert Johnson, residing at 789 Pine Street, San Francisco, CA.
+
+Position & Duties:
+The Employee shall serve in the position of Senior Systems Engineer.
+
+Compensation & Benefits:
+The Employee's annual salary shall be USD 120,000, payable bi-weekly. 
+The Employee is eligible for standard health insurance benefits and 15 days of paid annual leave.
+
+Probation & Term:
+The probation period shall be 3 months from the joining date.
+
+Notice Period & Termination:
+Either party may terminate this agreement by providing a 30-day prior written notice.
+Acme Global Corporation may terminate immediately for cause.
+
+Confidentiality & Intellectual Property:
+The Employee agrees to keep all proprietary company code and designs strictly confidential. All designs, software, and works created by the Employee during working hours belong to Acme Global Corporation.

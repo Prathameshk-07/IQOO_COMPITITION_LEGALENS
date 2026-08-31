@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalLens | Document Intelligence Assistant</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+
+        <!-- ============================================================
+             AUTHENTICATION OVERLAY
+             ============================================================ -->
+        <div id="auth-overlay" class="auth-overlay">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo">
+                        <i class="fa-solid fa-scale-balanced logo-icon"></i>
+                        <span>LEGALENS</span>
+                    </div>
+                    <p id="auth-subtitle">Premium Document Intelligence Assistant</p>
+                </div>
+
+                <!-- Sign In Form -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope"></i>
+                            <input type="email" id="login-email" placeholder="name@company.com" required
+                                autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="login-password" placeholder="Enter your password" required
+                                autocomplete="current-password">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">
+                        <span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                    <p class="auth-switch">Don't have an account? <span id="switch-to-signup">Sign Up</span></p>
+                </form>
+
+                <!-- Sign Up Form (hidden by default) -->
+                <form id="signup-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-user"></i>
+                            <input type="text" id="signup-name" placeholder="John Doe" required autocomplete="name">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="fa-regular fa-envelope"></i>
+                            <input type="email" id="signup-email" placeholder="name@company.com" required
+                                autocomplete="email">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="signup-password" placeholder="Create a strong password" required
+                                autocomplete="new-password">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary auth-btn">
+                        <span>Create Account</span> <i class="fa-solid fa-user-plus"></i>
+                    </button>
+                    <p class="auth-switch">Already have an account? <span id="switch-to-login">Sign In</span></p>
+                </form>
+
+                <div id="auth-error" class="auth-error hidden"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             MAIN WORKSPACE LAYER
+             ============================================================ -->
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-scale-balanced logo-icon"></i>
+                    <span>LEGALENS</span>
+                </div>
+                <button id="collapse-sidebar-btn" class="sidebar-toggle" title="Collapse Sidebar">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <!-- Sidebar Navigation Controls -->
+            <div class="sidebar-nav-controls">
+                <button id="new-chat-btn" class="btn-new-chat">
+                    <i class="fa-solid fa-plus"></i> <span>New Chat</span>
+                </button>
+                <button id="compare-mode-btn" class="btn-compare-docs">
+                    <i class="fa-solid fa-code-compare"></i> <span>Compare Docs</span>
+                </button>
+            </div>
+
+            <!-- Document Search -->
+            <div class="sidebar-search">
+                <div class="search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="doc-search-input" placeholder="Search documents...">
+                </div>
+            </div>
+
+            <!-- Sidebar Scrollable Body -->
+            <div class="sidebar-body scrollbar-custom">
+                <!-- Recent Chats Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">Recent Chats</div>
+                    <ul id="recent-chats-list" class="sidebar-list">
+                        <!-- Populated by JS -->
+                        <div class="list-placeholder">No recent chats</div>
+                    </ul>
+                </div>
+
+                <!-- Documents Library Section -->
+                <div class="sidebar-section">
+                    <div class="section-header">Your Documents</div>
+                    <ul id="documents-library-list" class="sidebar-list">
+                        <!-- Populated by JS -->
+                        <div class="list-placeholder">No documents uploaded</div>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <button id="settings-trigger-btn" class="footer-btn">
+                    <i class="fa-solid fa-sliders"></i> <span>Settings</span>
+                </button>
+                <button id="profile-trigger-btn" class="footer-btn">
+                    <i class="fa-regular fa-user"></i> <span>Profile</span>
+                </button>
+                <button id="logout-btn" class="footer-btn text-danger">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sidebar Mobile Toggle Overlay -->
+        <button id="mobile-toggle-btn" class="mobile-toggle-btn">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <!-- Main Workspace Area -->
+        <main class="chat-workspace">
+            <!-- Header bar -->
+            <header class="workspace-header">
+                <div class="header-info">
+                    <span id="active-chat-title" class="chat-title">New Chat</span>
+                </div>
+                <div class="header-actions">
+                    <div class="language-selector-wrapper">
+                        <i class="fa-solid fa-globe animate-spin-hover"></i>
+                        <select id="header-language-select" class="header-lang-select" title="AI Response Language">
+                            <option value="English">English</option>
+                            <option value="Hindi">Hindi (हिन्दी)</option>
+                            <option value="Bengali">Bengali (বাংলা)</option>
+                            <option value="Tamil">Tamil (தமிழ்)</option>
+                            <option value="Telugu">Telugu (తెలుగు)</option>
+                            <option value="Marathi">Marathi (मਰਾठी)</option>
+                            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                            <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                            <option value="Malayalam">Malayalam (മലയാളം)</option>
+                            <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                        </select>
+                    </div>
+                    <button id="info-panel-trigger" class="header-btn" title="Toggle Document Info Panel">
+                        <i class="fa-solid fa-circle-info"></i> <span>Info</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Top Document-Type Navigation (16 Categories) -->
+            <div class="doc-type-nav-container">
+                <div id="doc-type-nav" class="doc-type-nav">
+                    <button class="doc-type-tab active" data-type="Legal Agreement">⚖️ <span>Legal
+                            Agreement</span></button>
+                    <button class="doc-type-tab" data-type="Rental Agreement">🏠 <span>Rental Agreement</span></button>
+                    <button class="doc-type-tab" data-type="Employment Contract">💼 <span>Employment
+                            Contract</span></button>
+                    <button class="doc-type-tab" data-type="Bank / Financial Document">🏦 <span>Bank /
+                            Financial</span></button>
+                    <button class="doc-type-tab" data-type="Insurance Document">🏥 <span>Insurance</span></button>
+                    <button class="doc-type-tab" data-type="Government Form">🏛️ <span>Government Form</span></button>
+                    <button class="doc-type-tab" data-type="College / University Document">🎓 <span>College /
+                            Univ</span></button>
+                    <button class="doc-type-tab" data-type="Terms & Conditions">📜 <span>Terms &
+                            Conditions</span></button>
+                    <button class="doc-type-tab" data-type="Application / Policy Document">📋 <span>Application /
+                            Policy</span></button>
+                    <button class="doc-type-tab" data-type="Business Document">🏢 <span>Business Doc</span></button>
+                    <button class="doc-type-tab" data-type="Invoice / Bill">🧾 <span>Invoice / Bill</span></button>
+                    <button class="doc-type-tab" data-type="Purchase / Sales Agreement">🤝 <span>Purchase /
+                            Sales</span></button>
+                    <button class="doc-type-tab" data-type="Loan Document">💳 <span>Loan Document</span></button>
+                    <button class="doc-type-tab" data-type="Bank Statement">📊 <span>Bank Statement</span></button>
+                    <button class="doc-type-tab" data-type="Tax / Financial Document">📑 <span>Tax
+                            Record</span></button>
+                    <button class="doc-type-tab" data-type="Other">📁 <span>Other</span></button>
+                </div>
+                <!-- Banner container for active mode & classification feedback -->
+                <div id="classification-banner" class="classification-banner hidden"></div>
+            </div>
+
+            <!-- Document Intelligence Dashboard Toolbar (Active Document Insights) -->
+            <div id="doc-dashboard-bar" class="doc-dashboard-bar hidden">
+                <div class="doc-dashboard-meta">
+                    <span id="dashboard-doc-badge" class="badge-type">⚖️ Legal Agreement</span>
+                    <span id="dashboard-doc-title" class="dashboard-title">document.pdf</span>
+                    <span id="dashboard-doc-confidence" class="badge-confidence"><i
+                            class="fa-solid fa-circle-check"></i> High (95%)</span>
+                </div>
+                <div class="doc-dashboard-actions">
+                    <button id="btn-explain-full" class="btn-dashboard-action"
+                        title="Explain document section-by-section">
+                        <i class="fa-solid fa-book-open-reader"></i> <span>Explain Full Document</span>
+                    </button>
+                    <button id="btn-what-to-know" class="btn-dashboard-action"
+                        title="What should I know from this document?">
+                        <i class="fa-solid fa-lightbulb"></i> <span>What Should I Know?</span>
+                    </button>
+                    <button id="btn-quick-risks" class="btn-dashboard-action" title="View key risks and penalties">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <span>Risks & Warnings</span>
+                    </button>
+                    <button id="btn-next-actions" class="btn-dashboard-action"
+                        title="View tailored next steps checklist">
+                        <i class="fa-solid fa-list-check"></i> <span>Next Actions</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Stream Area -->
+            <div id="messages-container" class="messages-container scrollbar-custom">
+                <!-- Welcome/Zero-State Workspace -->
+                <div id="zero-state" class="zero-state">
+                    <i class="fa-solid fa-scale-balanced welcome-icon"></i>
+                    <h1>How can LegalLens assist you today?</h1>
+                    <p>Upload files or prompt directly to analyze contracts, extract terms, verify dates, or conduct
+                        general research.</p>
+                </div>
+            </div>
+
+            <!-- Comparison Workspace Area (Feature 5 - hidden by default) -->
+            <div id="comparison-workspace" class="comparison-workspace hidden">
+                <div class="comparison-header">
+                    <h3><i class="fa-solid fa-code-compare"></i> Document Comparison</h3>
+                    <button id="close-comparison-btn" class="btn-close-comparison" title="Exit Comparison">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="comparison-selection-bar">
+                    <p>Select two or more documents from your library, then click Compare:</p>
+                    <button id="execute-comparison-btn" class="btn-primary">
+                        <span>Compare Selected</span> <i class="fa-solid fa-magnifying-glass-chart"></i>
+                    </button>
+                </div>
+
+                <div id="comparison-results-container" class="comparison-results scrollbar-custom">
+                    <div class="comparison-placeholder">
+                        <i class="fa-solid fa-file-invoice placeholder-icon"></i>
+                        <p>Select documents from the sidebar checkboxes and click 'Compare Selected' to start.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Message Composer Area -->
+            <div class="composer-container">
+                <!-- Attached File Pill Preview Area -->
+                <div id="attached-file-preview" class="attached-file-preview hidden">
+                    <div class="file-pill">
+                        <i class="fa-solid fa-file-pdf file-pill-icon"></i>
+                        <div class="file-pill-details">
+                            <span id="file-pill-name" class="file-pill-name">filename.pdf</span>
+                            <span id="file-pill-size" class="file-pill-size">0 KB</span>
+                        </div>
+                        <!-- Upload indicator -->
+                        <div id="file-upload-progress" class="file-progress-ring hidden"
+                            style="font-size: 0.75rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 0.40rem; margin-right: 0.5rem;">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            <span>Uploading...</span>
+                        </div>
+                        <button id="remove-attachment-btn" class="remove-attachment-btn" title="Remove Attachment">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input box and buttons -->
+                <form id="chat-composer-form" class="chat-composer">
+                    <!-- Hidden file upload -->
+                    <input type="file" id="file-uploader" accept=".pdf,.txt" class="hidden">
+
+                    <button type="button" id="attach-btn" class="composer-btn" title="Attach Document (PDF, TXT)">
+                        <i class="fa-solid fa-paperclip"></i>
+                    </button>
+
+                    <button type="button" id="voice-btn" class="composer-btn" title="Voice Input (Speech-to-Text)">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+
+                    <textarea id="chat-input" rows="1" placeholder="Message LegalLens..." required></textarea>
+
+                    <div class="composer-right-controls">
+                        <!-- Toggle for Web Grounding -->
+                        <button type="button" id="web-search-toggle" class="composer-btn toggle-off"
+                            title="Toggle Google Search Grounding">
+                            <i class="fa-solid fa-network-wired"></i> <span>Search</span>
+                        </button>
+
+                        <button type="submit" id="send-btn" class="composer-send-btn" title="Send Message">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="composer-disclaimer">
+                    LegalLens is an information assistant and does not provide legal advice.
+                </div>
+            </div>
+        </main>
+
+        <!-- Important Information Side Panel (Feature 10 - Collapsible side area) -->
+        <aside id="info-side-panel" class="info-side-panel collapsed">
+            <div class="panel-header">
+                <h3><i class="fa-solid fa-circle-info"></i> Document Info</h3>
+                <button id="close-info-panel-btn" class="panel-close-btn" title="Collapse Info Panel">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="panel-body scrollbar-custom">
+                <div id="info-panel-content">
+                    <div class="panel-placeholder">
+                        <i class="fa-solid fa-file-shield placeholder-icon"></i>
+                        <p>Upload or select a document in the active chat to view dynamic intelligence and extracted
+                            fields.</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============================================================
+             MODALS LAYER
+             ============================================================ -->
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-sliders"></i> Settings</h3>
+                    <button class="modal-close-btn" onclick="toggleModal('settings-modal', false)">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label for="language-select">AI Response Language</label>
+                        <p class="setting-desc">The AI will automatically generate and format its answers in this
+                            language.</p>
+                        <select id="language-select" class="form-select">
+                            <option value="English">English</option>
+                            <option value="Hindi">Hindi (हिन्दी)</option>
+                            <option value="Bengali">Bengali (বাংলা)</option>
+                            <option value="Tamil">Tamil (தமிழ்)</option>
+                            <option value="Telugu">Telugu (తెలుగు)</option>
+                            <option value="Marathi">Marathi (मराठी)</option>
+                            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                            <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                            <option value="Malayalam">Malayalam (ಕನ್ನಡ)</option>
+                            <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" onclick="saveSettings()">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-regular fa-user"></i> User Profile</h3>
+                    <button class="modal-close-btn" onclick="toggleModal('profile-modal', false)">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="profile-info-grid">
+                        <div class="profile-avatar">
+                            <i class="fa-regular fa-user"></i>
+                        </div>
+                        <div class="profile-details">
+                            <h4 id="profile-fullname-display">Loading...</h4>
+                            <p id="profile-email-display">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Mismatch Warning Modal -->
+    <div id="mismatch-modal" class="modal-overlay hidden"
+        style="z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div class="modal-card" style="max-width: 460px; text-align: center; padding: 2rem;">
+            <div style="font-size: 3rem; color: #f59e0b; margin-bottom: 1.25rem;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3
+                style="font-family: var(--font-heading); font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--text-primary);">
+                ⚠️ Document Type Mismatch</h3>
+            <p id="mismatch-message-text"
+                style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.75rem; line-height: 1.6;">
+                This document appears to be an Employment Contract rather than a Rental Agreement.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%;">
+                <button id="mismatch-btn-force" class="btn-primary"
+                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); box-shadow: none;">
+                    Analyze as Selected Type
+                </button>
+                <button id="mismatch-btn-change" class="btn-primary">
+                    Change Application Mode
+                </button>
+                <button id="mismatch-btn-cancel" class="btn-primary"
+                    style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: #f87171; box-shadow: none;">
+                    Cancel Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- App JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
