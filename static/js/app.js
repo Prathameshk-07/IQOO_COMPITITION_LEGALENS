@@ -336,8 +336,8 @@ async function handleLogin(e) {
 
 async function handleSignup(e) {
     e.preventDefault();
-    const full_name = document.getElementById("signup-name").value;
-    const email = document.getElementById("signup-email").value;
+    const full_name = document.getElementById("signup-name").value.trim();
+    const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value;
     
     try {
@@ -349,8 +349,7 @@ async function handleSignup(e) {
         
         const data = await response.json();
         if (response.ok) {
-            // Some supabase configurations require email validation.
-            // If session is returned, login directly
+            // If session is returned directly, open workspace immediately
             if (data.access_token) {
                 token = data.access_token;
                 localStorage.setItem("legalens_jwt_token", token);
@@ -358,15 +357,17 @@ async function handleSignup(e) {
                 showAuth(false);
                 initWorkspace();
             } else {
-                showAuthError("Account created! Please sign in.");
+                const msg = data.message || "Account created! Please sign in.";
+                showAuthError(msg);
                 signupForm.classList.add("hidden");
                 loginForm.classList.remove("hidden");
+                document.getElementById("login-email").value = email;
             }
         } else {
             showAuthError(data.detail || "Signup failed.");
         }
     } catch (err) {
-        showAuthError("Server is unreachable.");
+        showAuthError("Server is unreachable. Please verify configuration.");
     }
 }
 
@@ -377,18 +378,36 @@ function showAuthError(msg) {
 
 async function handleLogout() {
     try {
-        await fetch(`${BASE_URL}/api/auth/logout`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        if (token) {
+            await fetch(`${BASE_URL}/api/auth/logout`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+        }
     } catch (err) {
         console.error("Logout api error:", err);
     }
     localStorage.removeItem("legalens_jwt_token");
     user = null;
     token = null;
+    conversations = [];
+    libraryDocuments = [];
+    activeConversationId = null;
+    attachedFile = null;
+    selectedCompareDocs = [];
+    compareMode = false;
+    
+    // Clear UI state completely so no leftover data persists across sessions
+    if (recentChatsList) recentChatsList.innerHTML = "";
+    if (documentsLibraryList) documentsLibraryList.innerHTML = "";
+    if (messagesContainer) messagesContainer.innerHTML = "";
+    if (chatInput) chatInput.value = "";
+    removeAttachedFile();
+    exitCompareMode();
+    
     showAuth(true);
 }
+
 
 // ==========================================================================
 // WORKSPACE ACTIONS & LOADERS

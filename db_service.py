@@ -135,13 +135,18 @@ def init_db():
         if "confidence" not in columns:
             cursor.execute("ALTER TABLE documents ADD COLUMN confidence REAL;")
 
+        cursor.execute("PRAGMA table_info(users);")
+        columns = [row["name"] for row in cursor.fetchall()]
+        if "password_hash" not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN password_hash TEXT;")
+
 # Initialize database on import
 init_db()
 
 # --- DB CRUD Helper Operations ---
 
 # Users
-def upsert_user(user_id: str, email: str, full_name: Optional[str] = None) -> Dict[str, Any]:
+def upsert_user(user_id: str, email: str, full_name: Optional[str] = None, password_hash: Optional[str] = None) -> Dict[str, Any]:
     with db_session(commit=True) as conn:
         cursor = conn.cursor()
         
@@ -152,15 +157,31 @@ def upsert_user(user_id: str, email: str, full_name: Optional[str] = None) -> Di
             cursor.execute("DELETE FROM users WHERE id = ?;", (existing_user["id"],))
             
         cursor.execute("""
-            INSERT INTO users (id, email, full_name)
-            VALUES (?, ?, ?)
+            INSERT INTO users (id, email, full_name, password_hash)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 email = excluded.email,
-                full_name = COALESCE(excluded.full_name, users.full_name)
+                full_name = COALESCE(excluded.full_name, users.full_name),
+                password_hash = COALESCE(excluded.password_hash, users.password_hash)
             RETURNING *;
-        """, (user_id, email, full_name))
+        """, (user_id, email, full_name, password_hash))
         row = cursor.fetchone()
         return dict(row)
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    with db_session() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = ?;", (email,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
+    with db_session() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = ?;", (user_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
 
 # Conversations
 def create_conversation(user_id: str, title: str = "New Chat") -> Dict[str, Any]:
