@@ -49,13 +49,22 @@ def run_e2e_tests():
         "prompt": "Hello! Explain what document intelligence is in one sentence.",
         "search_grounding": False,
         "language": "English"
-    })
+    }, stream=True)
     print("Send Message Status:", send_res.status_code)
     assert send_res.status_code == 200, f"Send message failed: {send_res.text}"
-    ai_response = send_res.json()
-    print("Gemini response text:")
-    print(ai_response["message"]["content"])
-    print("Sources:", ai_response.get("sources", []))
+    
+    accumulated_text = ""
+    for line in send_res.iter_lines():
+        if line:
+            decoded = line.decode("utf-8")
+            if decoded.startswith("data: "):
+                chunk_data = json.loads(decoded[6:])
+                if "text" in chunk_data:
+                    accumulated_text += chunk_data["text"]
+                    
+    print("Gemini streaming response text:")
+    print(accumulated_text[:200] + ("..." if len(accumulated_text) > 200 else ""))
+
 
     # 6. Verify Conversation History
     print("\n6. Verifying conversation history...")

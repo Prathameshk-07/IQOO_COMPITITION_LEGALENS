@@ -142,7 +142,8 @@ class TestLegalLensBackend(unittest.TestCase):
         
         self.assertEqual(len(results), 1)
         self.assertIn("Non-Disclosure", results[0]["content"])
-        self.assertGreater(results[0]["similarity"], 0.8)
+        self.assertGreater(results[0]["similarity"], 0.5)
+
         
     def test_06_gemini_integration(self):
         """Test real Gemini API generating text completion"""

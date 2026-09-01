@@ -497,8 +497,11 @@ async def upload_document(
             full_text=existing_doc["full_text"],
             summary=existing_doc["summary"],
             extracted_info=existing_doc["extracted_info"],
-            status="ready"
+            status="ready",
+            detected_type=existing_doc.get("detected_type"),
+            confidence=existing_doc.get("confidence")
         )
+
         
         # 2. Duplicate chunks instantly
         db_service.duplicate_document_chunks(existing_doc["id"], new_doc_id)
@@ -917,7 +920,8 @@ def send_message(
                 language=language,
                 document_type=doc_type,
                 document_context=full_doc_text or context_body,
-                intent=intent
+                intent=intent,
+                raw_query=prompt
             )
             
             for chunk_text in stream_gen:

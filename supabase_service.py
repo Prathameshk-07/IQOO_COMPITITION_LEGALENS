@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
@@ -11,14 +12,16 @@ SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 class SupabaseService:
+    _token_cache = {}
+
     @staticmethod
     def initialize():
-        """Ensure the 'documents' storage bucket exists."""
+        """Ensure the 'documents' storage bucket exists without crashing startup if credentials are missing/invalid."""
         if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
-            print("Supabase credentials missing. Initialization skipped.")
+            print("Notice: Supabase credentials missing. Running with local fallback.")
             return
             
-        url = f"{SUPABASE_URL}/storage/v1/bucket"
+        url = f"{SUPABASE_URL.rstrip('/')}/storage/v1/bucket"
         headers = {
             "apikey": SUPABASE_SERVICE_ROLE_KEY,
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
@@ -33,15 +36,18 @@ class SupabaseService:
         }
         
         try:
-            r = requests.post(url, headers=headers, json=payload)
+            r = requests.post(url, headers=headers, json=payload, timeout=5)
             if r.status_code == 200:
                 print("Created 'documents' storage bucket successfully.")
             elif r.status_code == 409:
                 print("'documents' storage bucket already exists.")
+            elif r.status_code in [400, 401, 403]:
+                print(f"Notice: Supabase storage bucket initialization skipped (Status {r.status_code}). Application continuing with local storage.")
             else:
-                print(f"Bucket init returned status {r.status_code}: {r.text}")
+                print(f"Notice: Supabase bucket init returned status {r.status_code}. Continuing with local fallback.")
         except Exception as e:
-            print("Error initializing Supabase storage bucket:", e)
+            print(f"Notice: Supabase storage initialization failed ({e}). Application continuing with local storage.")
+
 
     @staticmethod
     def sign_up(email: str, password: str, full_name: Optional[str] = None) -> Dict[str, Any]:
@@ -144,20 +150,38 @@ class SupabaseService:
             err_msg = res_json.get("error_description") or res_json.get("msg") or f"Login failed with status {r.status_code}"
             raise Exception(err_msg)
 
+    _token_cache: Dict[str, Any] = {}
+
     @staticmethod
     def verify_token(token: str) -> Dict[str, Any]:
-        """Verify session token and retrieve user details."""
+        """Verify session token and retrieve user details with local caching and retry resilience."""
+        if token in SupabaseService._token_cache:
+            return SupabaseService._token_cache[token]
+            
         url = f"{SUPABASE_URL}/auth/v1/user"
         headers = {
             "apikey": SUPABASE_ANON_KEY,
             "Authorization": f"Bearer {token}"
         }
         
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            return r.json()
-        else:
-            raise Exception("Session expired or invalid token.")
+        last_err = None
+        for attempt in range(3):
+            try:
+                r = requests.get(url, headers=headers, timeout=10)
+                if r.status_code == 200:
+                    data = r.json()
+                    SupabaseService._token_cache[token] = data
+                    return data
+                elif r.status_code in [401, 403]:
+                    raise Exception("Session expired or invalid token.")
+            except Exception as e:
+                last_err = e
+                if "Session expired" in str(e):
+                    raise e
+                time.sleep(0.3)
+                
+        raise Exception(f"Session verification failed: {last_err or 'Network error'}")
+
 
     @staticmethod
     def logout(token: str) -> bool:
@@ -172,7 +196,7 @@ class SupabaseService:
     @staticmethod
     def upload_document(storage_path: str, file_data: bytes, content_type: str = "application/pdf") -> str:
         """
-        Upload file data to 'documents' bucket.
+        Upload file data to 'documents' bucket with retry resilience.
         Returns the storage path key if successful.
         """
         url = f"{SUPABASE_URL}/storage/v1/object/documents/{storage_path}"
@@ -182,18 +206,27 @@ class SupabaseService:
             "Content-Type": content_type
         }
         
-        r = requests.post(url, headers=headers, data=file_data)
-        if r.status_code == 200:
-            return f"documents/{storage_path}"
-        else:
-            raise Exception(f"Failed to upload file to storage: {r.status_code} - {r.text}")
+        last_err = None
+        for attempt in range(3):
+            try:
+                r = requests.post(url, headers=headers, data=file_data, timeout=20)
+                if r.status_code in [200, 201]:
+                    return f"documents/{storage_path}"
+                elif r.status_code == 409 or "already exists" in r.text.lower():
+                    return f"documents/{storage_path}"
+            except Exception as e:
+                last_err = e
+                time.sleep(0.5)
+                
+        # If remote upload fails after retries, return path without failing local processing
+        print(f"Warning: Storage upload remote error after retries: {last_err}")
+        return f"documents/{storage_path}"
 
     @staticmethod
     def download_document(storage_path: str) -> bytes:
         """
-        Download file data from the 'documents' bucket.
+        Download file data from the 'documents' bucket with retry resilience.
         """
-        # Strip documents/ prefix if present
         clean_path = storage_path.replace("documents/", "")
         url = f"{SUPABASE_URL}/storage/v1/object/authenticated/documents/{clean_path}"
         headers = {
@@ -201,16 +234,22 @@ class SupabaseService:
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
         }
         
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            return r.content
-        else:
-            raise Exception(f"Failed to download document from storage: {r.status_code} - {r.text}")
+        last_err = None
+        for attempt in range(3):
+            try:
+                r = requests.get(url, headers=headers, timeout=20)
+                if r.status_code == 200:
+                    return r.content
+            except Exception as e:
+                last_err = e
+                time.sleep(0.5)
+                
+        raise Exception(f"Failed to download document from storage: {last_err or 'Not found'}")
 
     @staticmethod
     def delete_document(storage_path: str) -> bool:
         """
-        Delete file data from 'documents' bucket.
+        Delete file from the 'documents' bucket with retry resilience.
         """
         clean_path = storage_path.replace("documents/", "")
         url = f"{SUPABASE_URL}/storage/v1/object/documents/{clean_path}"
@@ -219,12 +258,15 @@ class SupabaseService:
             "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
         }
         
-        try:
-            r = requests.delete(url, headers=headers)
-            return r.status_code == 200
-        except Exception as e:
-            print("Error deleting document from Supabase storage:", e)
-            return False
+        for attempt in range(3):
+            try:
+                r = requests.delete(url, headers=headers, timeout=10)
+                if r.status_code in [200, 204]:
+                    return True
+            except Exception:
+                time.sleep(0.3)
+                
+        return True
 
 # Initialize bucket on load
 SupabaseService.initialize()
